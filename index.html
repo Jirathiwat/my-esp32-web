@@ -13,17 +13,18 @@
 
 <style>
   :root{
-    --bg: #F5F7F5;
+    /* โทนสีฟ้าออกน้ำทะเล (Ocean Blue Theme) */
+    --bg: #F0F6F8;
     --bg-panel: #FFFFFF;
-    --ink: #10262B;
-    --ink-soft: #4A5F5F;
-    --teal: #1B6E6E;
-    --teal-deep: #0F4C4C;
-    --mint: #DCEAE6;
-    --mint-line: #BFD8D2;
+    --ink: #0C2333;
+    --ink-soft: #425B6C;
+    --teal: #008B9B;         /* สีฟ้าน้ำทะเลสดใส */
+    --teal-deep: #0B4F6C;    /* สีฟ้าครามเข้ม / น้ำทะเลลึก */
+    --mint: #E1F1F5;         /* สีฟ้าไอซ์เบิร์กอ่อน */
+    --mint-line: #A3D2E0;    /* สีฟ้าพาสเทลสำหรับเส้นกราฟ */
     --coral: #E4572E;
     --coral-soft: #FBE4DB;
-    --line: rgba(16,38,43,0.12);
+    --line: rgba(12,35,51,0.12);
   }
 
   *{ margin:0; padding:0; box-sizing:border-box; }
@@ -59,7 +60,7 @@
     position:sticky;
     top:0;
     z-index:50;
-    background:rgba(245,247,245,0.86);
+    background:rgba(240,246,248,0.86);
     backdrop-filter:blur(10px);
     border-bottom:1px solid var(--line);
   }
@@ -179,7 +180,7 @@
     border:1px solid var(--line);
     border-radius:20px;
     padding:26px;
-    box-shadow:0 20px 60px -30px rgba(16,38,43,0.35);
+    box-shadow:0 20px 60px -30px rgba(12,35,51,0.35);
   }
   .device-top{
     display:flex;
@@ -197,13 +198,13 @@
   .live-dot{
     width:7px; height:7px; border-radius:50%;
     background:var(--teal);
-    box-shadow:0 0 0 0 rgba(27,110,110,0.5);
+    box-shadow:0 0 0 0 rgba(0,139,155,0.5);
     animation:pulse-ring 1.6s infinite;
   }
   @keyframes pulse-ring{
-    0%{ box-shadow:0 0 0 0 rgba(27,110,110,0.45); }
-    70%{ box-shadow:0 0 0 8px rgba(27,110,110,0); }
-    100%{ box-shadow:0 0 0 0 rgba(27,110,110,0); }
+    0%{ box-shadow:0 0 0 0 rgba(0,139,155,0.45); }
+    70%{ box-shadow:0 0 0 8px rgba(0,139,155,0); }
+    100%{ box-shadow:0 0 0 0 rgba(0,139,155,0); }
   }
 
   .vitals-grid{
@@ -501,8 +502,8 @@
   <nav class="wrap">
     <div class="brand">
       <svg class="brand-mark" viewBox="0 0 26 26" fill="none">
-        <circle cx="13" cy="13" r="12" stroke="#1B6E6E" stroke-width="1.6"/>
-        <path d="M4 13 H9 L11 7 L15 19 L17 13 H22" stroke="#1B6E6E" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="13" cy="13" r="12" stroke="#008B9B" stroke-width="1.6"/>
+        <path d="M4 13 H9 L11 7 L15 19 L17 13 H22" stroke="#008B9B" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       V-Glove
     </div>
@@ -573,25 +574,25 @@
     </div>
     <div class="vitals-cards">
       <div class="vcard">
-        <svg class="icon" viewBox="0 0 40 40" fill="none"><path d="M6 22h6l3-9 4 16 3-11 2 4h10" stroke="#1B6E6E" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="icon" viewBox="0 0 40 40" fill="none"><path d="M6 22h6l3-9 4 16 3-11 2 4h10" stroke="#008B9B" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <h3>Heart rate</h3>
         <p>Continuous pulse sensing to identify tachycardia and resting spikes.</p>
         <span class="range">60 – 100 bpm</span>
       </div>
       <div class="vcard">
-        <svg class="icon" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="13" stroke="#1B6E6E" stroke-width="1.7"/><path d="M20 12v8l6 4" stroke="#1B6E6E" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <svg class="icon" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="13" stroke="#008B9B" stroke-width="1.7"/><path d="M20 12v8l6 4" stroke="#008B9B" stroke-width="1.7" stroke-linecap="round"/></svg>
         <h3>Oxygen saturation</h3>
         <p>Pulse oximetry tracks blood oxygen levels (SpO2) continuously.</p>
         <span class="range">95 – 100%</span>
       </div>
       <div class="vcard">
-        <svg class="icon" viewBox="0 0 40 40" fill="none"><path d="M17 8v16.5a5 5 0 105.5 0V8a2.75 2.75 0 00-5.5 0z" stroke="#1B6E6E" stroke-width="1.7"/></svg>
+        <svg class="icon" viewBox="0 0 40 40" fill="none"><path d="M17 8v16.5a5 5 0 105.5 0V8a2.75 2.75 0 00-5.5 0z" stroke="#008B9B" stroke-width="1.7"/></svg>
         <h3>Body temperature</h3>
         <p>Contactless infrared skin-surface sensing detects abnormal fever levels.</p>
         <span class="range">36.1 – 37.2 °C</span>
       </div>
       <div class="vcard">
-        <svg class="icon" viewBox="0 0 40 40" fill="none"><path d="M20 33s-13-8.1-13-17a7.5 7.5 0 0113-5 7.5 7.5 0 0113 5c0 8.9-13 17-13 17z" stroke="#1B6E6E" stroke-width="1.7"/></svg>
+        <svg class="icon" viewBox="0 0 40 40" fill="none"><path d="M20 33s-13-8.1-13-17a7.5 7.5 0 0113-5 7.5 7.5 0 0113 5c0 8.9-13 17-13 17z" stroke="#008B9B" stroke-width="1.7"/></svg>
         <h3>Risk Evaluation</h3>
         <p>Realtime automated analysis classifying status as Normal, Warning, or Critical.</p>
         <span class="range" id="card-risk-display">Normal</span>
@@ -716,7 +717,7 @@
         mainDivider.classList.remove('alert');
       } else {
         statusElem.innerHTML = '● All vitals normal (' + riskText + ')';
-        statusElem.style.color = 'var(--teal-deep)'; // สีเขียวปกติ
+        statusElem.style.color = 'var(--teal-deep)'; // สีฟ้าครามเข้ม
         mainDivider.classList.remove('alert');
       }
     }
