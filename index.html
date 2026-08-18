@@ -1,80 +1,727 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ESP32 Realtime Dashboard</title>
-  
-  <!-- โหลด Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V-Glove — Vitals monitoring &amp; emergency response</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f4f6f9;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .card {
-      background: white;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-      text-align: center;
-      min-width: 300px;
-    }
-    h1 { color: #333; font-size: 1.5rem; }
-    .value {
-      font-size: 3.5rem;
-      font-weight: bold;
-      color: #ff4757;
-      margin: 20px 0;
-    }
-    .status {
-      font-size: 0.9rem;
-      color: #70a1ff;
-    }
-  </style>
+<!-- โหลด Firebase SDK (Compat Version 8) -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<style>
+  :root{
+    --bg: #F5F7F5;
+    --bg-panel: #FFFFFF;
+    --ink: #10262B;
+    --ink-soft: #4A5F5F;
+    --teal: #1B6E6E;
+    --teal-deep: #0F4C4C;
+    --mint: #DCEAE6;
+    --mint-line: #BFD8D2;
+    --coral: #E4572E;
+    --coral-soft: #FBE4DB;
+    --line: rgba(16,38,43,0.12);
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  html{ scroll-behavior:smooth; }
+
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  h1,h2,h3{
+    font-family:'Space Grotesk', sans-serif;
+    letter-spacing:-0.01em;
+    font-weight:600;
+  }
+
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+
+  .wrap{
+    max-width:1120px;
+    margin:0 auto;
+    padding:0 32px;
+  }
+
+  a{ color:inherit; }
+
+  /* ---------- NAV ---------- */
+  header{
+    position:sticky;
+    top:0;
+    z-index:50;
+    background:rgba(245,247,245,0.86);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  nav.wrap{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    height:72px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:19px;
+  }
+  .brand-mark{
+    width:26px; height:26px;
+    position:relative;
+  }
+  .nav-links{
+    display:flex;
+    gap:32px;
+    font-size:14.5px;
+    color:var(--ink-soft);
+  }
+  .nav-links a{ text-decoration:none; transition:color .15s; }
+  .nav-links a:hover{ color:var(--teal-deep); }
+  .nav-cta{
+    background:var(--teal-deep);
+    color:#fff;
+    padding:10px 20px;
+    border-radius:8px;
+    font-size:14px;
+    font-weight:500;
+    text-decoration:none;
+    white-space:nowrap;
+  }
+  @media (max-width:820px){ .nav-links{ display:none; } }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    padding:88px 0 40px;
+  }
+  .hero-grid{
+    display:grid;
+    grid-template-columns:1.05fr 0.95fr;
+    gap:56px;
+    align-items:center;
+  }
+  @media (max-width:900px){ .hero-grid{ grid-template-columns:1fr; } }
+
+  .eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--teal-deep);
+    background:var(--mint);
+    padding:6px 12px;
+    border-radius:100px;
+    margin-bottom:22px;
+  }
+  .eyebrow .dot{
+    width:6px; height:6px;
+    border-radius:50%;
+    background:var(--coral);
+    animation:blink 1.8s ease-in-out infinite;
+  }
+  @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:.25;} }
+
+  .hero h1{
+    font-size:52px;
+    line-height:1.06;
+    margin-bottom:22px;
+  }
+  .hero h1 .accent{ color:var(--teal); }
+
+  .hero p.lede{
+    font-size:18px;
+    color:var(--ink-soft);
+    max-width:480px;
+    margin-bottom:30px;
+  }
+
+  .hero-actions{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+  .btn-primary{
+    background:var(--teal-deep);
+    color:#fff;
+    padding:14px 24px;
+    border-radius:9px;
+    font-size:15px;
+    font-weight:500;
+    text-decoration:none;
+    display:inline-block;
+    transition:transform .15s, background .15s;
+  }
+  .btn-primary:hover{ background:var(--teal); transform:translateY(-1px); }
+  .btn-ghost{
+    padding:14px 22px;
+    font-size:15px;
+    color:var(--ink);
+    text-decoration:none;
+    border:1px solid var(--line);
+    border-radius:9px;
+    transition:border-color .15s;
+  }
+  .btn-ghost:hover{ border-color:var(--teal); }
+
+  /* ---- device readout card ---- */
+  .device{
+    background:var(--bg-panel);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:26px;
+    box-shadow:0 20px 60px -30px rgba(16,38,43,0.35);
+  }
+  .device-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:18px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .device-top .live{
+    display:flex; align-items:center; gap:6px;
+    color:var(--teal-deep);
+  }
+  .live-dot{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--teal);
+    box-shadow:0 0 0 0 rgba(27,110,110,0.5);
+    animation:pulse-ring 1.6s infinite;
+  }
+  @keyframes pulse-ring{
+    0%{ box-shadow:0 0 0 0 rgba(27,110,110,0.45); }
+    70%{ box-shadow:0 0 0 8px rgba(27,110,110,0); }
+    100%{ box-shadow:0 0 0 0 rgba(27,110,110,0); }
+  }
+
+  .vitals-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:18px;
+  }
+  .vital-cell{
+    background:var(--mint);
+    border-radius:12px;
+    padding:14px 16px;
+  }
+  .vital-cell .label{
+    font-size:11px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    color:var(--teal-deep);
+    opacity:0.75;
+    margin-bottom:6px;
+  }
+  .vital-cell .value{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:24px;
+    font-weight:600;
+    color:var(--ink);
+  }
+  .vital-cell .unit{
+    font-size:13px;
+    font-weight:400;
+    color:var(--ink-soft);
+    margin-left:3px;
+  }
+
+  .device-wave{ width:100%; height:56px; display:block; }
+  .device-wave path{
+    fill:none;
+    stroke:var(--teal);
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+
+  .device-foot{
+    display:flex;
+    justify-content:space-between;
+    margin-top:16px;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .device-foot span.ok{ color:var(--teal-deep); font-weight:500; }
+
+  /* ---------- ECG DIVIDER ---------- */
+  .ecg-divider{
+    width:100%;
+    height:64px;
+    overflow:hidden;
+    position:relative;
+    background:var(--bg);
+  }
+  .ecg-divider svg{ width:100%; height:100%; display:block; }
+  .ecg-divider path{
+    fill:none;
+    stroke:var(--mint-line);
+    stroke-width:1.5;
+  }
+  .ecg-divider path.active{
+    stroke:var(--teal);
+    stroke-width:2;
+    stroke-dasharray:1400;
+    stroke-dashoffset:1400;
+    animation:draw 5s linear infinite;
+  }
+  @keyframes draw{
+    0%{ stroke-dashoffset:1400; }
+    60%{ stroke-dashoffset:0; }
+    100%{ stroke-dashoffset:-1400; }
+  }
+  .ecg-divider.alert path.active{ stroke:var(--coral); }
+
+  /* ---------- SECTION SHARED ---------- */
+  section{ padding:88px 0; }
+  .section-head{
+    max-width:600px;
+    margin-bottom:52px;
+  }
+  .section-head .kicker{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--teal-deep);
+    margin-bottom:12px;
+    display:block;
+  }
+  .section-head h2{
+    font-size:34px;
+    margin-bottom:14px;
+  }
+  .section-head p{
+    color:var(--ink-soft);
+    font-size:16.5px;
+  }
+
+  /* ---------- VITALS CARDS ---------- */
+  .vitals-cards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:20px;
+  }
+  @media (max-width:900px){ .vitals-cards{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:520px){ .vitals-cards{ grid-template-columns:1fr; } }
+
+  .vcard{
+    background:var(--bg-panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:26px 22px;
+    transition:border-color .2s, transform .2s;
+  }
+  .vcard:hover{ border-color:var(--teal); transform:translateY(-3px); }
+  .vcard .icon{
+    width:40px; height:40px;
+    margin-bottom:18px;
+  }
+  .vcard h3{ font-size:17px; margin-bottom:8px; }
+  .vcard p{ font-size:14.5px; color:var(--ink-soft); margin-bottom:14px; }
+  .vcard .range{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    color:var(--teal-deep);
+    background:var(--mint);
+    display:inline-block;
+    padding:5px 10px;
+    border-radius:6px;
+  }
+
+  /* ---------- EMERGENCY SECTION ---------- */
+  .emergency{ background:var(--teal-deep); color:#fff; }
+  .emergency .section-head .kicker{ color:var(--mint); }
+  .emergency .section-head h2{ color:#fff; }
+  .emergency .section-head p{ color:rgba(255,255,255,0.72); }
+
+  .em-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:28px;
+  }
+  @media (max-width:900px){ .em-grid{ grid-template-columns:1fr; } }
+
+  .em-panel{
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.14);
+    border-radius:18px;
+    padding:28px;
+  }
+  .em-panel h3{
+    font-size:18px;
+    margin-bottom:16px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+
+  /* mini map mock */
+  .map-mock{
+    position:relative;
+    height:210px;
+    border-radius:12px;
+    background:
+      linear-gradient(rgba(255,255,255,0.05), rgba(255,255,255,0.05)),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 34px);
+    background-color:rgba(255,255,255,0.03);
+    margin-bottom:16px;
+    overflow:hidden;
+  }
+  .map-you, .map-hosp{
+    position:absolute;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:5px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+  }
+  .map-you{ top:60%; left:28%; color:var(--coral); }
+  .map-hosp{ top:22%; left:66%; color:var(--mint); }
+  .dot-marker{
+    width:10px; height:10px;
+    border-radius:50%;
+    box-shadow:0 0 0 4px rgba(255,255,255,0.08);
+  }
+  .map-you .dot-marker{ background:var(--coral); }
+  .map-hosp .dot-marker{ background:var(--mint); }
+  .route-line{
+    position:absolute;
+    top:0; left:0;
+    width:100%; height:100%;
+  }
+  .route-line path{
+    fill:none;
+    stroke:rgba(255,255,255,0.5);
+    stroke-width:2;
+    stroke-dasharray:6 6;
+  }
+
+  .em-list{ list-style:none; }
+  .em-list li{
+    display:flex;
+    gap:12px;
+    padding:11px 0;
+    border-bottom:1px solid rgba(255,255,255,0.1);
+    font-size:14.5px;
+    color:rgba(255,255,255,0.85);
+  }
+  .em-list li:last-child{ border-bottom:none; }
+  .em-list .idx{
+    font-family:'IBM Plex Mono', monospace;
+    color:var(--mint);
+    font-size:13px;
+    flex:none;
+  }
+
+  /* ---------- FLOW / SEQUENCE ---------- */
+  .flow{
+    display:flex;
+    flex-direction:column;
+    gap:0;
+  }
+  .flow-step{
+    display:grid;
+    grid-template-columns:64px 1fr;
+    gap:22px;
+    padding:26px 0;
+    border-top:1px solid var(--line);
+  }
+  .flow-step:last-child{ border-bottom:1px solid var(--line); }
+  .flow-num{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:14px;
+    color:var(--teal-deep);
+    padding-top:2px;
+  }
+  .flow-body h3{ font-size:17.5px; margin-bottom:6px; }
+  .flow-body p{ color:var(--ink-soft); font-size:15px; max-width:560px; }
+
+  /* ---------- CTA ---------- */
+  .cta{
+    text-align:center;
+    padding:96px 0 110px;
+  }
+  .cta h2{
+    font-size:36px;
+    max-width:560px;
+    margin:0 auto 16px;
+  }
+  .cta p{
+    color:var(--ink-soft);
+    font-size:16.5px;
+    margin-bottom:32px;
+  }
+
+  footer{
+    border-top:1px solid var(--line);
+    padding:36px 0;
+  }
+  .foot-wrap{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:13.5px;
+    color:var(--ink-soft);
+  }
+  @media (max-width:600px){
+    .foot-wrap{ flex-direction:column; gap:10px; text-align:center; }
+    .hero h1{ font-size:38px; }
+    .section-head h2{ font-size:27px; }
+  }
+
+  /* focus visibility */
+  a:focus-visible, button:focus-visible{
+    outline:2px solid var(--teal);
+    outline-offset:2px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
+  }
+</style>
 </head>
 <body>
 
-  <div class="card">
-    <h1>ค่าอุณหภูมิจาก ESP32</h1>
-    <div class="value"><span id="temp">--</span> °C</div>
-    <div class="status" id="status">กำลังเชื่อมต่อฐานข้อมูล...</div>
+<header>
+  <nav class="wrap">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 26 26" fill="none">
+        <circle cx="13" cy="13" r="12" stroke="#1B6E6E" stroke-width="1.6"/>
+        <path d="M4 13 H9 L11 7 L15 19 L17 13 H22" stroke="#1B6E6E" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      V-Glove
+    </div>
+    <div class="nav-links">
+      <a href="#vitals">Vitals</a>
+      <a href="#emergency">Emergency response</a>
+      <a href="#how">How it works</a>
+    </div>
+    <a href="#cta" class="nav-cta">Get V-Glove</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow"><span class="dot"></span> READING VITALS REALTIME</span>
+      <h1>Your body's numbers.<br>Their <span class="accent">exact location</span>.<br>One signal apart.</h1>
+      <p class="lede">V-Glove is a smart wearable that watches oxygen, heart rate, and temperature around the clock — and the moment something looks wrong, it alerts emergency response and guides you through what to do.</p>
+      <div class="hero-actions">
+        <a href="#cta" class="btn-primary">Get V-Glove</a>
+        <a href="#how" class="btn-ghost">See how it responds →</a>
+      </div>
+    </div>
+
+    <!-- Live Card แสดงผลข้อมูลจริงจาก Firebase -->
+    <div class="device">
+      <div class="device-top">
+        <span>V-GLOVE UNIT · LIVE FEED</span>
+        <span class="live"><span class="live-dot"></span> LIVE</span>
+      </div>
+      <div class="vitals-grid">
+        <div class="vital-cell">
+          <div class="label">Heart rate</div>
+          <div class="value"><span id="bpm">--</span><span class="unit">bpm</span></div>
+        </div>
+        <div class="vital-cell">
+          <div class="label">Oxygen (SpO₂)</div>
+          <div class="value"><span id="spo2">--</span><span class="unit">%</span></div>
+        </div>
+        <div class="vital-cell" style="grid-column: span 2;">
+          <div class="label">Temperature</div>
+          <div class="value"><span id="temp">--</span><span class="unit">°C</span></div>
+        </div>
+      </div>
+      <svg class="device-wave" viewBox="0 0 400 56" preserveAspectRatio="none">
+        <path d="M0,28 L60,28 L75,10 L90,46 L105,28 L160,28 L175,18 L190,38 L205,28 L400,28"/>
+      </svg>
+      <div class="device-foot">
+        <span>Nearest hospital: <strong>Ratsada Hospital</strong></span>
+        <span class="ok" id="risk-status">● Connecting...</span>
+      </div>
+    </div>
   </div>
+</section>
 
-  <script>
-    // ⚠️ นำค่า Database URL จากหน้าจอของคุณมาใส่ตรงนี้
-    const firebaseConfig = {
-      databaseURL: "https://my-esp32-project-3166d-default-rtdb.asia-southeast1.firebasedatabase.app"
-    };
+<div class="ecg-divider" id="main-divider">
+  <svg viewBox="0 0 1400 64" preserveAspectRatio="none">
+    <path d="M0,32 L120,32 L145,12 L170,52 L195,32 L500,32 L525,20 L550,44 L575,32 L900,32 L925,12 L950,52 L975,32 L1400,32"/>
+    <path class="active" d="M0,32 L120,32 L145,12 L170,52 L195,32 L500,32 L525,20 L550,44 L575,32 L900,32 L925,12 L950,52 L975,32 L1400,32"/>
+  </svg>
+</div>
 
-    // เริ่มต้นระบบ Firebase
-    firebase.initializeApp(firebaseConfig);
+<section id="vitals">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">What V-Glove watches</span>
+      <p>Continuous health monitoring that flags anything drifting outside safe medical thresholds.</p>
+    </div>
+    <div class="vitals-cards">
+      <div class="vcard">
+        <svg class="icon" viewBox="0 0 40 40" fill="none"><path d="M6 22h6l3-9 4 16 3-11 2 4h10" stroke="#1B6E6E" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h3>Heart rate</h3>
+        <p>Continuous pulse sensing to identify tachycardia and resting spikes.</p>
+        <span class="range">60 – 100 bpm</span>
+      </div>
+      <div class="vcard">
+        <svg class="icon" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="13" stroke="#1B6E6E" stroke-width="1.7"/><path d="M20 12v8l6 4" stroke="#1B6E6E" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <h3>Oxygen saturation</h3>
+        <p>Pulse oximetry tracks blood oxygen levels (SpO2) continuously.</p>
+        <span class="range">95 – 100%</span>
+      </div>
+      <div class="vcard">
+        <svg class="icon" viewBox="0 0 40 40" fill="none"><path d="M17 8v16.5a5 5 0 105.5 0V8a2.75 2.75 0 00-5.5 0z" stroke="#1B6E6E" stroke-width="1.7"/></svg>
+        <h3>Body temperature</h3>
+        <p>Contactless infrared skin-surface sensing detects abnormal fever levels.</p>
+        <span class="range">36.1 – 37.2 °C</span>
+      </div>
+      <div class="vcard">
+        <svg class="icon" viewBox="0 0 40 40" fill="none"><path d="M20 33s-13-8.1-13-17a7.5 7.5 0 0113-5 7.5 7.5 0 0113 5c0 8.9-13 17-13 17z" stroke="#1B6E6E" stroke-width="1.7"/></svg>
+        <h3>Risk Evaluation</h3>
+        <p>Realtime automated analysis classifying status as Normal, Warning, or Critical.</p>
+        <span class="range" id="card-risk-display">Normal</span>
+      </div>
+    </div>
+  </div>
+</section>
 
-    // อ้างอิงไปยังตำแหน่งข้อมูลใน Realtime Database (เช่น /Sensor/Temperature)
-    const tempRef = firebase.database().ref('/Sensor/Temperature');
+<section id="emergency" class="emergency">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">When something's wrong</span>
+      <h2>Help finds you, not the other way around</h2>
+      <p>An abnormal reading doesn't just sound an alarm — it opens a path to the nearest hospital and first-aid instructions.</p>
+    </div>
+    <div class="em-grid">
+      <div class="em-panel">
+        <h3>📍 Nearest hospital, always ready</h3>
+        <div class="map-mock">
+          <svg class="route-line" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <path d="M28,60 C40,55 50,40 66,22"/>
+          </svg>
+          <div class="map-you"><div class="dot-marker"></div>You</div>
+          <div class="map-hosp"><div class="dot-marker"></div>Ratsada Hosp.</div>
+        </div>
+        <p style="color:rgba(255,255,255,0.72); font-size:14px;">GPS locks onto Ratsada Hospital instantly when critical thresholds are exceeded, delivering your exact coordinates via LINE alert.</p>
+      </div>
+      <div class="em-panel">
+        <h3>🩹 First aid recommendations</h3>
+        <ul class="em-list">
+          <li><span class="idx">01</span> Sit or lie down safely and remain calm.</li>
+          <li><span class="idx">02</span> Wipe down body with damp towel if high fever is present.</li>
+          <li><span class="idx">03</span> Loosen tight clothing and ensure fresh air ventilation.</li>
+          <li><span class="idx">04</span> Ensure LINE emergency alerts have reached caregivers.</li>
+          <li><span class="idx">05</span> Contact local emergency medical services immediately if critical.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
 
-    // เมื่อมีข้อมูลเปลี่ยนแปลงใน Firebase จะอัปเดตหน้าเว็บทันทีแบบ Realtime
-    tempRef.on('value', (snapshot) => {
-      const val = snapshot.val();
-      if (val !== null) {
-        document.getElementById('temp').innerText = val;
-        document.getElementById('status').innerText = "อัปเดตข้อมูลล่าสุดแล้ว (Realtime)";
+<section id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">How it responds</span>
+      <h2>From first sign to emergency alert</h2>
+    </div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">01</div>
+        <div class="flow-body">
+          <h3>Sensors read health vitals</h3>
+          <p>MAX30102 and MLX90614 sensors gather real-time SpO2, BPM, and Temperature readings.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">02</div>
+        <div class="flow-body">
+          <h3>Firebase synchronizes data</h3>
+          <p>ESP32 transmits live metrics directly to the Firebase Realtime Database over Wi-Fi.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">03</div>
+        <div class="flow-body">
+          <h3>Web &amp; LINE notifications trigger</h3>
+          <p>The system evaluates risk conditions, updates the website dashboard, and pushes immediate alerts to your LINE account.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta" id="cta">
+  <div class="wrap">
+    <h2>Wear something that watches back.</h2>
+    <p>V-Glove health monitoring platform connected to Firebase & LINE Notify API.</p>
+    <a href="#" class="btn-primary">Get V-Glove</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-wrap">
+    <span>© 2026 V-Glove Health Devices</span>
+    <span>V-Glove supports emergency response — it does not replace professional medical diagnosis.</span>
+  </div>
+</footer>
+
+<!-- สคริปต์เชื่อมต่อ Firebase ดึงค่าจริงจาก ESP32 -->
+<script>
+  const firebaseConfig = {
+    databaseURL: "https://my-esp32-project-3166d-default-rtdb.asia-southeast1.firebasedatabase.app"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+
+  const vgloveRef = firebase.database().ref('/V-Glove');
+
+  vgloveRef.on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      // แสดงผลค่าตัวเลขลงใน Live Card
+      document.getElementById('bpm').innerText = data.BPM !== undefined ? data.BPM : '--';
+      document.getElementById('spo2').innerText = data.SpO2 !== undefined ? data.SpO2 : '--';
+      document.getElementById('temp').innerText = data.Temperature !== undefined ? data.Temperature : '--';
+
+      // จัดการการแสดงผล Status ความเสี่ยง
+      const statusElem = document.getElementById('risk-status');
+      const cardRiskElem = document.getElementById('card-risk-display');
+      const mainDivider = document.getElementById('main-divider');
+      const riskText = data.Risk || 'ปกติ';
+
+      cardRiskElem.innerText = riskText;
+
+      if (riskText === 'วิกฤต') {
+        statusElem.innerHTML = '● CRITICAL: ' + riskText;
+        statusElem.style.color = '#E4572E'; // สีส้มอมแดง
+        mainDivider.classList.add('alert');
+      } else if (riskText === 'เฝ้าระวัง') {
+        statusElem.innerHTML = '● WARNING: ' + riskText;
+        statusElem.style.color = '#f59e0b'; // สีส้ม
+        mainDivider.classList.remove('alert');
       } else {
-        document.getElementById('temp').innerText = "--";
-        document.getElementById('status').innerText = "ยังไม่มีข้อมูลส่งมาจาก ESP32";
+        statusElem.innerHTML = '● All vitals normal (' + riskText + ')';
+        statusElem.style.color = 'var(--teal-deep)'; // สีเขียวปกติ
+        mainDivider.classList.remove('alert');
       }
-    }, (error) => {
-      document.getElementById('status').innerText = "เกิดข้อผิดพลาดในการดึงข้อมูล";
-      console.error(error);
-    });
-  </script>
+    }
+  });
+</script>
 
 </body>
 </html>
