@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32 Realtime Dashboard</title>
+  
+  <!-- โหลด Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f6f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      text-align: center;
+      min-width: 300px;
+    }
+    h1 { color: #333; font-size: 1.5rem; }
+    .value {
+      font-size: 3.5rem;
+      font-weight: bold;
+      color: #ff4757;
+      margin: 20px 0;
+    }
+    .status {
+      font-size: 0.9rem;
+      color: #70a1ff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>ค่าอุณหภูมิจาก ESP32</h1>
+    <div class="value"><span id="temp">--</span> °C</div>
+    <div class="status" id="status">กำลังเชื่อมต่อฐานข้อมูล...</div>
+  </div>
+
+  <script>
+    // ⚠️ นำค่า Database URL จากหน้าจอของคุณมาใส่ตรงนี้
+    const firebaseConfig = {
+      databaseURL: "https://my-esp32-project-3166d-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
+
+    // เริ่มต้นระบบ Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // อ้างอิงไปยังตำแหน่งข้อมูลใน Realtime Database (เช่น /Sensor/Temperature)
+    const tempRef = firebase.database().ref('/Sensor/Temperature');
+
+    // เมื่อมีข้อมูลเปลี่ยนแปลงใน Firebase จะอัปเดตหน้าเว็บทันทีแบบ Realtime
+    tempRef.on('value', (snapshot) => {
+      const val = snapshot.val();
+      if (val !== null) {
+        document.getElementById('temp').innerText = val;
+        document.getElementById('status').innerText = "อัปเดตข้อมูลล่าสุดแล้ว (Realtime)";
+      } else {
+        document.getElementById('temp').innerText = "--";
+        document.getElementById('status').innerText = "ยังไม่มีข้อมูลส่งมาจาก ESP32";
+      }
+    }, (error) => {
+      document.getElementById('status').innerText = "เกิดข้อผิดพลาดในการดึงข้อมูล";
+      console.error(error);
+    });
+  </script>
+
+</body>
+</html>
