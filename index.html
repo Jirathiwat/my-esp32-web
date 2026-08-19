@@ -368,49 +368,6 @@
     gap:10px;
   }
 
-  /* mini map mock */
-  .map-mock{
-    position:relative;
-    height:210px;
-    border-radius:12px;
-    background:
-      linear-gradient(rgba(255,255,255,0.05), rgba(255,255,255,0.05)),
-      repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 34px),
-      repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 34px);
-    background-color:rgba(255,255,255,0.03);
-    margin-bottom:16px;
-    overflow:hidden;
-  }
-  .map-you, .map-hosp{
-    position:absolute;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:5px;
-    font-family:'IBM Plex Mono', monospace;
-    font-size:10.5px;
-  }
-  .map-you{ top:60%; left:28%; color:var(--coral); }
-  .map-hosp{ top:22%; left:66%; color:var(--mint); }
-  .dot-marker{
-    width:10px; height:10px;
-    border-radius:50%;
-    box-shadow:0 0 0 4px rgba(255,255,255,0.08);
-  }
-  .map-you .dot-marker{ background:var(--coral); }
-  .map-hosp .dot-marker{ background:var(--mint); }
-  .route-line{
-    position:absolute;
-    top:0; left:0;
-    width:100%; height:100%;
-  }
-  .route-line path{
-    fill:none;
-    stroke:rgba(255,255,255,0.5);
-    stroke-width:2;
-    stroke-dasharray:6 6;
-  }
-
   .em-list{ list-style:none; }
   .em-list li{
     display:flex;
@@ -551,7 +508,7 @@
         <path d="M0,28 L60,28 L75,10 L90,46 L105,28 L160,28 L175,18 L190,38 L205,28 L400,28"/>
       </svg>
       <div class="device-foot">
-        <span>Nearest hospital: <strong>Ratsada Hospital</strong></span>
+        <span>Nearest hospital: <strong id="foot-hosp-name">โรงพยาบาลรัษฎา</strong></span>
         <span class="ok" id="risk-status">● Connecting...</span>
       </div>
     </div>
@@ -608,17 +565,28 @@
       <p>An abnormal reading doesn't just sound an alarm — it opens a path to the nearest hospital and first-aid instructions.</p>
     </div>
     <div class="em-grid">
+      
+      <!-- ส่วนแสดง Google Maps อัปเดตตำแหน่งจริงตามชื่อโรงพยาบาล -->
       <div class="em-panel">
         <h3>📍 Nearest hospital, always ready</h3>
-        <div class="map-mock">
-          <svg class="route-line" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <path d="M28,60 C40,55 50,40 66,22"/>
-          </svg>
-          <div class="map-you"><div class="dot-marker"></div>You</div>
-          <div class="map-hosp"><div class="dot-marker"></div>Ratsada Hosp.</div>
+        
+        <div class="map-container" style="height:210px; margin-bottom:16px; border-radius:12px; overflow:hidden;">
+          <iframe 
+            id="hospital-map"
+            width="100%" 
+            height="100%" 
+            style="border:0;" 
+            loading="lazy" 
+            allowfullscreen 
+            src="https://maps.google.com/maps?q=โรงพยาบาลรัษฎา&t=&z=14&ie=UTF8&iwloc=&output=embed">
+          </iframe>
         </div>
-        <p style="color:rgba(255,255,255,0.72); font-size:14px;">GPS locks onto Ratsada Hospital instantly when critical thresholds are exceeded, delivering your exact coordinates via LINE alert.</p>
+
+        <p style="color:rgba(255,255,255,0.72); font-size:14px;">
+          GPS locks onto <strong id="hosp-name-text" style="color:#fff;">โรงพยาบาลรัษฎา</strong> instantly when critical thresholds are exceeded, delivering your exact coordinates via LINE alert.
+        </p>
       </div>
+
       <div class="em-panel">
         <h3>🩹 First aid recommendations</h3>
         <ul class="em-list">
@@ -693,12 +661,32 @@
   vgloveRef.on('value', (snapshot) => {
     const data = snapshot.val();
     if (data) {
-      // แสดงผลค่าตัวเลขลงใน Live Card
+      // 1. แสดงผลค่าตัวเลขลงในการ์ด Live Feed
       document.getElementById('bpm').innerText = data.BPM !== undefined ? data.BPM : '--';
       document.getElementById('spo2').innerText = data.SpO2 !== undefined ? data.SpO2 : '--';
       document.getElementById('temp').innerText = data.Temperature !== undefined ? data.Temperature : '--';
 
-      // จัดการการแสดงผล Status ความเสี่ยง
+      // 2. ดึงชื่อโรงพยาบาล อัปเดตข้อความ และอัปเดตหมุดบน Google Maps
+      const hospitalName = data.Hospital || "โรงพยาบาลรัษฎา";
+      
+      const hospTextElem = document.getElementById('hosp-name-text');
+      if (hospTextElem) hospTextElem.innerText = hospitalName;
+
+      const footHospElem = document.getElementById('foot-hosp-name');
+      if (footHospElem) footHospElem.innerText = hospitalName;
+
+      const mapFrame = document.getElementById('hospital-map');
+      if (mapFrame) {
+        const encodedHosp = encodeURIComponent(hospitalName);
+        const newMapSrc = `https://maps.google.com/maps?q=${encodedHosp}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+        
+        // อัปเดต Map src เมื่อชื่อโรงพยาบาลมีการเปลี่ยนแปลงเท่านั้น
+        if (mapFrame.src !== newMapSrc) {
+          mapFrame.src = newMapSrc;
+        }
+      }
+
+      // 3. จัดการการแสดงผล Status ความเสี่ยง
       const statusElem = document.getElementById('risk-status');
       const cardRiskElem = document.getElementById('card-risk-display');
       const mainDivider = document.getElementById('main-divider');
@@ -708,15 +696,15 @@
 
       if (riskText === 'วิกฤต') {
         statusElem.innerHTML = '● CRITICAL: ' + riskText;
-        statusElem.style.color = '#E4572E'; // สีส้มอมแดง
+        statusElem.style.color = '#E4572E';
         mainDivider.classList.add('alert');
       } else if (riskText === 'เฝ้าระวัง') {
         statusElem.innerHTML = '● WARNING: ' + riskText;
-        statusElem.style.color = '#f59e0b'; // สีส้ม
+        statusElem.style.color = '#f59e0b';
         mainDivider.classList.remove('alert');
       } else {
         statusElem.innerHTML = '● All vitals normal (' + riskText + ')';
-        statusElem.style.color = 'var(--teal-deep)'; // สีเขียวปกติ
+        statusElem.style.color = 'var(--teal-deep)';
         mainDivider.classList.remove('alert');
       }
     }
